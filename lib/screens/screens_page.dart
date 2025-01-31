@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_rodzendai_front_end/api/get_google_sheet.dart';
 import 'package:flutter_rodzendai_front_end/screens/closecasereport_page.dart';
 import 'package:flutter_rodzendai_front_end/screens/dashboard_page.dart';
 import 'package:flutter_rodzendai_front_end/screens/menu/header_at.dart';
@@ -19,6 +20,7 @@ class ScreensPage extends StatefulWidget {
 }
 
 class _ScreensPageState extends State<ScreensPage> {
+
   final themeColors = ThemeColors();
   int selectedPageIndex = 0;
   bool isSidebarOpen = true; // ✅ ตัวแปรควบคุม Sidebar
@@ -44,7 +46,7 @@ class _ScreensPageState extends State<ScreensPage> {
     KeyedSubtree(
         key: UniqueKey(),
         child: NewCasePage()), // ✅ Use KeyedSubtree with UniqueKey()
-    const ProjectCase1Page(),
+     GetDataGoogleSheets(),
     const ProjectCase2Page(),
     const SchedulePage(),
     const CloseCaseReportPage(),
@@ -61,7 +63,7 @@ class _ScreensPageState extends State<ScreensPage> {
           child: Row(
             children: [
               // ✅ ส่ง callback ไปที่ Sidebar เพื่อให้เปลี่ยนหน้าได้
-              Sidebar(onMenuSelected: onMenuItemSelected ),
+              Sidebar(onMenuSelected: onMenuItemSelected),
 
               Expanded(
                 child: Container(

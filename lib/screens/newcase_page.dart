@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:developer';
 
 import 'package:flutter/cupertino.dart';
@@ -7,6 +8,7 @@ import 'package:flutter_rodzendai_front_end/screens/details/case_details_page.da
 import 'package:flutter_rodzendai_front_end/screens/menu/sidebar_at.dart';
 import 'package:flutter_rodzendai_front_end/theme/colors.dart';
 import 'package:flutter_svg/svg.dart';
+import 'package:http/http.dart' as http;
 
 class NewCasePage extends StatefulWidget {
   const NewCasePage({super.key});
@@ -15,33 +17,121 @@ class NewCasePage extends StatefulWidget {
   State<NewCasePage> createState() => _NewCasePageState();
 }
 
-class _NewCasePageState extends State<NewCasePage> with RouteAware {
-  int selectedTabIndex = 0; // เก็บค่า Tab ที่เลือก
-  int currentPage = 1; // เก็บหน้าปัจจุบัน
-  final int rowsPerPage = 7; // จำนวนแถวต่อหน้า
-  bool showOverlayPage = true; // ค่าเริ่มต้นให้แสดง OverlayPage
-  Map<String, String>? selectedCase; // เก็บข้อมูลเคสที่เลือก
-  int hoveredIndex = -1; // เก็บ index ที่เมาส์ชี้อยู่
+class _NewCasePageState extends State<NewCasePage> {
+  int selectedTabIndex = 0;
+  int currentPage = 1;
+  final int rowsPerPage = 7;
+  bool showOverlayPage = true;
+  Map<String, String>? selectedCase;
+  int hoveredIndex = -1;
+  List<Map<String, String>> caseDataList = [];
   final RouteObserver<PageRoute> routeObserver = RouteObserver<PageRoute>();
 
   @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    routeObserver.subscribe(this, ModalRoute.of(context) as PageRoute);
+  void initState() {
+    super.initState();
+    fetchGoogleSheetsData();
   }
 
-  @override
-  void dispose() {
-    routeObserver.unsubscribe(this);
-    super.dispose();
-  }
+  Future<void> fetchGoogleSheetsData() async {
+    final url = Uri.parse(
+        'https://docs.google.com/spreadsheets/d/1Po1EqeHklF4skRfn_Mm6nc88883P-BST-a6_nDN8qCU/gviz/tq?tqx=out:json');
 
-  @override
-  void didPopNext() {
-    // ✅ เมื่อกลับมาที่ NewCasePage ให้แสดงหน้าแรกใหม่
-    setState(() {
-      showOverlayPage = true;
-    });
+    final response = await http.get(url);
+
+    if (response.statusCode == 200) {
+      final jsonString = response.body.substring(47, response.body.length - 2);
+      final jsonData = json.decode(jsonString);
+
+      List<Map<String, String>> extractedData = [];
+      for (var i = 1; i < jsonData['table']['rows'].length; i++) {
+        var row = jsonData['table']['rows'][i]['c'];
+        String convertDateFormat(String date) {
+          try {
+            DateTime parsedDate = DateTime.parse(date);
+            int buddhistYear = parsedDate.year + 543; // แปลง ค.ศ. → พ.ศ.
+            return "${parsedDate.day.toString().padLeft(2, '0')}/"
+                "${parsedDate.month.toString().padLeft(2, '0')}/"
+                "$buddhistYear";
+          } catch (e) {
+            return date; // ถ้าแปลงไม่ได้ให้คืนค่าเดิม
+          }
+        }
+
+        String convertTimeFormat(String time) {
+          try {
+            List<String> parts = time.split(":");
+            String hour = parts[0].padLeft(2, '0'); // ทำให้เป็น 2 หลัก เช่น 08
+            String minute = parts[1]; // เอาเฉพาะนาที
+            return "$hour.$minute น.";
+          } catch (e) {
+            return time; // ถ้าแปลงไม่ได้ให้คืนค่าเดิม
+          }
+        }
+
+        String convertJavaScriptDate(String date) {
+          try {
+            final regex = RegExp(r'Date\((\d+),(\d+),(\d+)\)');
+            final match = regex.firstMatch(date);
+
+            if (match != null) {
+              int year = int.parse(match.group(1)!); // ดึงปี
+              int month = int.parse(match.group(2)!) + 1; // ดึงเดือน (บวก 1)
+              int day = int.parse(match.group(3)!); // ดึงวัน
+
+              int buddhistYear = year + 543; // แปลง ค.ศ. → พ.ศ.
+              return "${day.toString().padLeft(2, '0')}/"
+                  "${month.toString().padLeft(2, '0')}/"
+                  "$buddhistYear";
+            } else {
+              return date; // คืนค่าเดิมถ้าไม่ match
+            }
+          } catch (e) {
+            return date; // คืนค่าเดิมถ้าแปลงไม่ได้
+          }
+        }
+
+        String convertTimeFromJavaScriptDate(String date) {
+          try {
+            final regex =
+                RegExp(r'Date\((\d+),(\d+),(\d+),(\d+),(\d+),(\d+)\)');
+            final match = regex.firstMatch(date);
+
+            if (match != null) {
+              int hour = int.parse(match.group(4)!); // ดึงชั่วโมง
+              int minute = int.parse(match.group(5)!); // ดึงนาที
+
+              // แปลงเวลาเป็นรูปแบบ HH.MM น.
+              return "${hour.toString().padLeft(2, '0')}.${minute.toString().padLeft(2, '0')} น.";
+            } else {
+              return date; // คืนค่าเดิมถ้าไม่ match
+            }
+          } catch (e) {
+            return date; // คืนค่าเดิมถ้าแปลงไม่ได้
+          }
+        }
+
+        extractedData.add({
+          "date": row[8] != null
+              ? convertJavaScriptDate(row[8]['v'].toString())
+              : "", // I
+          "time": row[9] != null
+              ? convertTimeFromJavaScriptDate(row[9]['v'].toString())
+              : "", // J
+          "name": row[3] != null ? row[3]['v'].toString() : "", // D
+          "phone": row[4] != null ? row[4]['v'].toString() : "", // E
+          "location": row[16] != null ? row[16]['v'].toString() : "", // Q
+          "jobNumber": row[1] != null ? row[1]['v'].toString() : "", // B
+          "status": "ไม่ได้", // ค่าเริ่มต้น
+        });
+      }
+
+      setState(() {
+        caseDataList = extractedData;
+      });
+    } else {
+      throw Exception('Failed to load data from Google Sheets');
+    }
   }
 
   @override
@@ -52,42 +142,19 @@ class _NewCasePageState extends State<NewCasePage> with RouteAware {
       "สามารถเดินทางได้",
       "ไม่สามารถเดินทางได้"
     ];
-    final List<Map<String, String>> caseDataList = [
-      {
-        "date": "09/02/2568",
-        "time": "13.00 น.",
-        "name": "จิรวัฒน์ แสนธารา",
-        "phone": "092 2725242",
-        "location": "โรงพยาบาลพญาไท 3",
-        "jobNumber": "1234567",
-        "status": "ไม่ได้",
-      },
-      {
-        "date": "10/02/2568",
-        "time": "14.00 น.",
-        "name": "สมชาย ใจดี",
-        "phone": "093 1234567",
-        "location": "โรงพยาบาลกรุงเทพ",
-        "jobNumber": "7654321",
-        "status": "เสร็จสิ้น",
-      },
-      {
-        "date": "10/02/2568",
-        "time": "14.00 น.",
-        "name": "สมชาย ใจดี",
-        "phone": "093 1234567",
-        "location": "โรงพยาบาลกรุงเทพ",
-        "jobNumber": "7654321",
-        "status": "เสร็จสิ้น",
-      },
-    ];
-    // คำนวณจำนวนหน้าทั้งหมด
+
     int totalPages = (caseDataList.length / rowsPerPage).ceil();
 
-    // ข้อมูลที่จะแสดงในหน้าปัจจุบัน
+    // ✅ คำนวณข้อมูลที่จะแสดงในหน้าปัจจุบัน
     List<Map<String, String>> displayedData = caseDataList
-        .skip((currentPage - 1) * rowsPerPage)
-        .take(rowsPerPage)
+        .where((data) =>
+            data["date"] != null &&
+            data["date"]!.isNotEmpty && // ตรวจสอบ date
+            data["name"] != null &&
+            data["name"]!.isNotEmpty) // ตรวจสอบ name
+        .skip((currentPage - 1) *
+            rowsPerPage) // ข้ามข้อมูลที่ไม่อยู่ในหน้าปัจจุบัน
+        .take(rowsPerPage) // ดึงข้อมูลเฉพาะแถวในหน้าปัจจุบัน
         .toList();
 
     return Padding(
@@ -283,7 +350,7 @@ class _NewCasePageState extends State<NewCasePage> with RouteAware {
                               "สถานะ"
                             ].map((text) => Expanded(
                                   child: SizedBox(
-                                    width: 104,
+                                    width: 130,
                                     child: Text(
                                       text,
                                       style: TextStyle(
@@ -306,20 +373,21 @@ class _NewCasePageState extends State<NewCasePage> with RouteAware {
                 ),
                 Expanded(
                   child: ListView.builder(
-                    itemCount: caseDataList.length,
+                    physics:
+                        const NeverScrollableScrollPhysics(), // ✅ ปิดการเลื่อนลง
+                    itemCount: displayedData.length,
                     itemBuilder: (context, index) {
-                      final caseData = caseDataList[index];
+                      final caseData = displayedData[index];
 
                       return MouseRegion(
-                        // ✅ เพิ่ม MouseRegion เพื่อจับ Hover
                         onEnter: (_) {
                           setState(() {
-                            hoveredIndex = index; // เก็บ index ที่เมาส์ชี้อยู่
+                            hoveredIndex = index;
                           });
                         },
                         onExit: (_) {
                           setState(() {
-                            hoveredIndex = -1; // ลบค่าเมื่อเมาส์ออก
+                            hoveredIndex = -1;
                           });
                         },
                         child: InkWell(
@@ -340,8 +408,7 @@ class _NewCasePageState extends State<NewCasePage> with RouteAware {
                               border: Border.all(
                                 color: hoveredIndex == index
                                     ? ThemeColors().green50
-                                    : Colors
-                                        .transparent, // ✅ เปลี่ยนขอบเมื่อ Hover
+                                    : Colors.transparent,
                                 width: 2,
                               ),
                               boxShadow: [
@@ -361,17 +428,17 @@ class _NewCasePageState extends State<NewCasePage> with RouteAware {
                                     MainAxisAlignment.spaceBetween,
                                 children: [
                                   _buildTextCell(
-                                      caseData["date"] ?? "ไม่ระบุ", 104),
+                                      caseData["date"] ?? "ไม่ระบุ", 130),
                                   _buildTextCell(
-                                      caseData["time"] ?? "ไม่ระบุ", 104),
+                                      caseData["time"] ?? "ไม่ระบุ", 130),
                                   _buildTextCell(
-                                      caseData["name"] ?? "ไม่ระบุ", 104),
+                                      caseData["name"] ?? "ไม่ระบุ", 130),
                                   _buildTextCell(
-                                      caseData["phone"] ?? "ไม่ระบุ", 104),
+                                      caseData["phone"] ?? "ไม่ระบุ", 130),
                                   _buildTextCell(
-                                      caseData["location"] ?? "ไม่ระบุ", 104),
+                                      caseData["location"] ?? "ไม่ระบุ", 130),
                                   _buildTextCell(
-                                      caseData["jobNumber"] ?? "ไม่ระบุ", 104),
+                                      caseData["jobNumber"] ?? "ไม่ระบุ", 130),
                                   _buildStatusButton(
                                       caseData["status"] ?? "ไม่ระบุ"),
                                 ],
@@ -383,7 +450,7 @@ class _NewCasePageState extends State<NewCasePage> with RouteAware {
                     },
                   ),
                 ),
-                _buildPagination(totalPages, currentPage, caseDataList),
+                _buildPagination(totalPages),
               ],
             )
           : CaseDataListPState(
@@ -398,18 +465,17 @@ class _NewCasePageState extends State<NewCasePage> with RouteAware {
   }
 
   Widget _buildTextCell(String text, double width,
-      {String? jobNumber, Map<String, String>? caseData}) {
+      {Map<String, String>? caseData}) {
     return InkWell(
-      onTap: jobNumber != null
+      onTap: caseData != null
           ? () {
               setState(() {
                 selectedCase = caseData; // อัปเดตค่า case ที่ถูกเลือก
-                showOverlayPage =
-                    false; // ซ่อนหน้า Overlay และแสดง CaseDataListPState
+                showOverlayPage = false; // ซ่อนหน้า Overlay
               });
             }
           : null,
-      child: Container(
+      child: SizedBox(
         width: width,
         child: Text(
           text,
@@ -426,48 +492,39 @@ class _NewCasePageState extends State<NewCasePage> with RouteAware {
     );
   }
 
-  Widget _buildPagination(
-      int totalPages, int currentPage, List<Map<String, String>> caseDataList) {
+  Widget _buildPagination(int totalPages) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         // แสดงข้อมูลจำนวนแถว
         Text(
-          "แสดงข้อมูล ${(currentPage - 1) * rowsPerPage + 1} ถึง ${(currentPage * rowsPerPage).clamp(0, caseDataList.length)} จาก ${caseDataList.length} แถว",
+          "แสดงข้อมูล ${(currentPage - 1) * rowsPerPage + 1} "
+          "ถึง ${(currentPage * rowsPerPage).clamp(0, caseDataList.length)} "
+          "จาก ${caseDataList.length} แถว",
           style: const TextStyle(fontSize: 14, color: Colors.grey),
         ),
-        // แสดงปุ่ม Pagination
         Row(
           children: [
-            // ปุ่มก่อนหน้า
             GestureDetector(
               onTap: currentPage > 1
                   ? () {
                       setState(() {
-                        currentPage--;
+                        currentPage--; // ✅ ย้อนกลับหน้าก่อนหน้า
                       });
                     }
                   : null,
-              child: Container(
-                margin: const EdgeInsets.symmetric(horizontal: 4),
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(50),
-                ),
-                child: Icon(
-                  Icons.chevron_left,
-                  size: 24,
-                  color: currentPage > 1 ? Colors.black : Colors.grey,
-                ),
+              child: Icon(
+                Icons.chevron_left,
+                size: 24,
+                color: currentPage > 1 ? Colors.black : Colors.grey,
               ),
             ),
-            // หมายเลขหน้า
-            ...List.generate(totalPages, (index) {
+            ...List.generate(totalPages > 0 ? totalPages : 1, (index) {
               int pageIndex = index + 1;
               return GestureDetector(
                 onTap: () {
                   setState(() {
-                    currentPage = pageIndex;
+                    currentPage = pageIndex; // ✅ อัปเดตหน้าปัจจุบัน
                   });
                 },
                 child: Container(
@@ -497,26 +554,18 @@ class _NewCasePageState extends State<NewCasePage> with RouteAware {
                 ),
               );
             }),
-            // ปุ่มถัดไป
             GestureDetector(
               onTap: currentPage < totalPages
                   ? () {
                       setState(() {
-                        currentPage++;
+                        currentPage++; // ✅ ไปหน้าถัดไป
                       });
                     }
                   : null,
-              child: Container(
-                margin: const EdgeInsets.symmetric(horizontal: 4),
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(50),
-                ),
-                child: Icon(
-                  Icons.chevron_right,
-                  size: 24,
-                  color: currentPage < totalPages ? Colors.black : Colors.grey,
-                ),
+              child: Icon(
+                Icons.chevron_right,
+                size: 24,
+                color: currentPage < totalPages ? Colors.black : Colors.grey,
               ),
             ),
           ],
@@ -524,25 +573,25 @@ class _NewCasePageState extends State<NewCasePage> with RouteAware {
       ],
     );
   }
-}
 
-Widget _buildStatusButton(String status) {
-  return Container(
-    width: 104,
-    height: 30,
-    decoration: BoxDecoration(
-      color: status == "ไม่ได้" ? ThemeColors().red80 : Colors.green,
-      borderRadius: BorderRadius.circular(24),
-    ),
-    child: Center(
-      child: Text(
-        status,
-        style: TextStyle(
-          fontSize: 16,
-          fontWeight: FontWeight.w400,
-          color: ThemeColors().white,
+  Widget _buildStatusButton(String status) {
+    return Container(
+      width: 104,
+      height: 30,
+      decoration: BoxDecoration(
+        color: status == "ไม่ได้" ? ThemeColors().red80 : Colors.green,
+        borderRadius: BorderRadius.circular(24),
+      ),
+      child: Center(
+        child: Text(
+          status,
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w400,
+            color: ThemeColors().white,
+          ),
         ),
       ),
-    ),
-  );
+    );
+  }
 }
