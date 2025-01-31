@@ -1,7 +1,10 @@
 import 'dart:convert';
+import 'dart:developer';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
+import 'package:flutter_rodzendai_front_end/screens/details/widget/build_sidebar_cannot.dart';
+import 'package:flutter_rodzendai_front_end/screens/details/widget/build_sidebar_successful.dart';
 import 'package:flutter_rodzendai_front_end/screens/details/widget/build_sidebar_wait.dart';
 import 'package:flutter_rodzendai_front_end/theme/colors.dart';
 import 'package:flutter_rodzendai_front_end/theme/text_styles.dart';
@@ -10,11 +13,13 @@ import 'package:http/http.dart' as http;
 
 class CaseDataListPState extends StatefulWidget {
   final String jobNumber;
+  final String status;
   final VoidCallback onBackPressed; // เพิ่ม Callback สำหรับปุ่ม "กลับ"
 
   CaseDataListPState({
     Key? key,
     required this.jobNumber,
+    required this.status,
     required this.onBackPressed, // ต้องรับค่ามาด้วย
   }) : super(key: key);
 
@@ -188,6 +193,9 @@ class _CaseDataListPStateState extends State<CaseDataListPState> {
                   row[18] != null ? row[18]['v'].toString() : "ไม่ระบุ",
               "subdistrictEnd":
                   row[19] != null ? row[19]['v'].toString() : "ไม่ระบุ",
+              //! ==========================
+              //! รูป
+              "img": row[26] != null ? row[26]['v'].toString() : "ไม่ระบุ",
             };
 
             break; // หยุด Loop เมื่อเจอข้อมูล
@@ -207,6 +215,50 @@ class _CaseDataListPStateState extends State<CaseDataListPState> {
       }
     } catch (e) {
       print("❌ Error occurred: $e");
+    }
+  }
+
+  String convertGoogleDriveUrl(String url) {
+    RegExp regExp = RegExp(r'/d/([a-zA-Z0-9_-]+)');
+    var match = regExp.firstMatch(url);
+    if (match != null) {
+      return "https://drive.google.com/uc?export=view&id=${match.group(1)}";
+    } else {
+      return url; // ถ้าไม่ใช่ Google Drive ให้ใช้ URL เดิม
+    }
+  }
+
+  void openImg(BuildContext context) {
+    String? imgUrl = selectedRowData?['img'];
+
+    if (imgUrl != null && imgUrl.isNotEmpty) {
+      String convertedUrl = convertGoogleDriveUrl(imgUrl); // แปลงลิงก์
+
+      showDialog(
+        context: context,
+        builder: (BuildContext context) {
+          return AlertDialog(
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Image.network(
+                  convertedUrl, // ใช้ลิงก์ที่แปลงแล้ว
+                  errorBuilder: (context, error, stackTrace) {
+                    return const Text("❌ โหลดรูปไม่ได้");
+                  },
+                ),
+                const SizedBox(height: 10),
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  child: const Text("ปิด"),
+                ),
+              ],
+            ),
+          );
+        },
+      );
+    } else {
+      print("❌ ไม่มีลิงก์รูปภาพ");
     }
   }
 
@@ -241,7 +293,9 @@ class _CaseDataListPStateState extends State<CaseDataListPState> {
                                 _buildDetailRow("ชื่อโรงพยาบาล : ",
                                     selectedRowData?['hospital'] ?? 'ไม่ระบุ'),
                                 _buildDetailRow("แนบเอกสารใบนัด : ", "ดูข้อมูล",
-                                    underline: true),
+                                    underline: true, onPasss: () {
+                                  openImg(context);
+                                }),
                               ],
                             ),
                             SizedBox(width: 16),
@@ -309,7 +363,11 @@ class _CaseDataListPStateState extends State<CaseDataListPState> {
               ),
 
               // ✅ Sidebar (ด้านขวา)
-              BuildSideBarWait(),
+              widget.status == "รอคัดกรอง"
+                  ? BuildSideBarWait()
+                  : widget.status == "ได้"
+                      ? BuildSideBarSuccessful()
+                      : BuildSideBarCannot()
             ],
           );
   }
@@ -354,38 +412,43 @@ class _CaseDataListPStateState extends State<CaseDataListPState> {
     );
   }
 
-  Widget _buildDetailRow(String label, String value, {bool underline = false}) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Text(
-          label,
-          style: TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.w400,
-            color: ThemeColors().lightBlue60,
-          ),
-        ),
-        Expanded(
-          // ✅ เพิ่ม Expanded เพื่อบังคับให้ Text ตัดข้อความได้
-          child: Text(
-            value,
-            maxLines: 1, // แสดงเพียง 1 บรรทัด
-            overflow: TextOverflow.ellipsis, // ตัดข้อความเกินด้วย "..."
-            textAlign: TextAlign.right, // ชิดขวา
+  Widget _buildDetailRow(String label, String value,
+      {bool underline = false, VoidCallback? onPasss}) {
+    return GestureDetector(
+      onTap: onPasss,
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(
+            label,
             style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.w400,
-              color:
-                  underline ? ThemeColors().lightBlue60 : ThemeColors().gray30,
-              decoration:
-                  underline ? TextDecoration.underline : TextDecoration.none,
-              decorationThickness: 1.5, // ความหนาของขีดเส้นใต้
-              decorationColor: underline ? ThemeColors().lightBlue60 : null,
+              color: ThemeColors().lightBlue60,
             ),
           ),
-        ),
-      ],
+          Expanded(
+            // ✅ เพิ่ม Expanded เพื่อบังคับให้ Text ตัดข้อความได้
+            child: Text(
+              value,
+              maxLines: 1, // แสดงเพียง 1 บรรทัด
+              overflow: TextOverflow.ellipsis, // ตัดข้อความเกินด้วย "..."
+              textAlign: TextAlign.right, // ชิดขวา
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w400,
+                color: underline
+                    ? ThemeColors().lightBlue60
+                    : ThemeColors().gray30,
+                decoration:
+                    underline ? TextDecoration.underline : TextDecoration.none,
+                decorationThickness: 1.5, // ความหนาของขีดเส้นใต้
+                decorationColor: underline ? ThemeColors().lightBlue60 : null,
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 

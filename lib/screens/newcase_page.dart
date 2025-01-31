@@ -46,29 +46,6 @@ class _NewCasePageState extends State<NewCasePage> {
       List<Map<String, String>> extractedData = [];
       for (var i = 1; i < jsonData['table']['rows'].length; i++) {
         var row = jsonData['table']['rows'][i]['c'];
-        String convertDateFormat(String date) {
-          try {
-            DateTime parsedDate = DateTime.parse(date);
-            int buddhistYear = parsedDate.year + 543; // แปลง ค.ศ. → พ.ศ.
-            return "${parsedDate.day.toString().padLeft(2, '0')}/"
-                "${parsedDate.month.toString().padLeft(2, '0')}/"
-                "$buddhistYear";
-          } catch (e) {
-            return date; // ถ้าแปลงไม่ได้ให้คืนค่าเดิม
-          }
-        }
-
-        String convertTimeFormat(String time) {
-          try {
-            List<String> parts = time.split(":");
-            String hour = parts[0].padLeft(2, '0'); // ทำให้เป็น 2 หลัก เช่น 08
-            String minute = parts[1]; // เอาเฉพาะนาที
-            return "$hour.$minute น.";
-          } catch (e) {
-            return time; // ถ้าแปลงไม่ได้ให้คืนค่าเดิม
-          }
-        }
-
         String convertJavaScriptDate(String date) {
           try {
             final regex = RegExp(r'Date\((\d+),(\d+),(\d+)\)');
@@ -122,7 +99,8 @@ class _NewCasePageState extends State<NewCasePage> {
           "phone": row[4] != null ? row[4]['v'].toString() : "", // E
           "location": row[16] != null ? row[16]['v'].toString() : "", // Q
           "jobNumber": row[1] != null ? row[1]['v'].toString() : "", // B
-          "status": "ไม่ได้", // ค่าเริ่มต้น
+          "status":
+              row[29] != null ? row[29]['v'].toString() : "" // ค่าเริ่มต้น
         });
       }
 
@@ -145,16 +123,28 @@ class _NewCasePageState extends State<NewCasePage> {
 
     int totalPages = (caseDataList.length / rowsPerPage).ceil();
 
-    // ✅ คำนวณข้อมูลที่จะแสดงในหน้าปัจจุบัน
-    List<Map<String, String>> displayedData = caseDataList
+// กรองข้อมูลตาม Tab ที่เลือก
+    List<Map<String, String>> filteredData = caseDataList.where((data) {
+      String? status = data["status"]; // ดึงค่า status จริงจากข้อมูล
+      if (selectedTabIndex == 0) return true; // "ทั้งหมด"
+
+      // แปลงค่า tabs ให้ตรงกับค่า status จริง
+      if (selectedTabIndex == 2) return status == "ได้"; // "สามารถเดินทางได้"
+      if (selectedTabIndex == 3)
+        return status == "ไม่ได้"; // "ไม่สามารถเดินทางได้"
+
+      return status == "รอคัดกรอง"; // "รอคัดกรอง"
+    }).toList();
+
+// คำนวณข้อมูลที่จะแสดงในหน้าปัจจุบัน
+    List<Map<String, String>> displayedData = filteredData
         .where((data) =>
             data["date"] != null &&
-            data["date"]!.isNotEmpty && // ตรวจสอบ date
+            data["date"]!.isNotEmpty &&
             data["name"] != null &&
-            data["name"]!.isNotEmpty) // ตรวจสอบ name
-        .skip((currentPage - 1) *
-            rowsPerPage) // ข้ามข้อมูลที่ไม่อยู่ในหน้าปัจจุบัน
-        .take(rowsPerPage) // ดึงข้อมูลเฉพาะแถวในหน้าปัจจุบัน
+            data["name"]!.isNotEmpty)
+        .skip((currentPage - 1) * rowsPerPage)
+        .take(rowsPerPage)
         .toList();
 
     return Padding(
@@ -267,6 +257,7 @@ class _NewCasePageState extends State<NewCasePage> {
                           onTap: () {
                             setState(() {
                               selectedTabIndex = index; // อัปเดต Tab ที่เลือก
+                              currentPage = 1; // รีเซ็ตหน้าปัจจุบัน
                             });
                           },
                           child: Container(
@@ -378,7 +369,6 @@ class _NewCasePageState extends State<NewCasePage> {
                     itemCount: displayedData.length,
                     itemBuilder: (context, index) {
                       final caseData = displayedData[index];
-
                       return MouseRegion(
                         onEnter: (_) {
                           setState(() {
@@ -455,6 +445,7 @@ class _NewCasePageState extends State<NewCasePage> {
             )
           : CaseDataListPState(
               jobNumber: selectedCase?["jobNumber"] ?? "",
+              status :selectedCase?["status"] ?? "",
               onBackPressed: () {
                 setState(() {
                   showOverlayPage = true; // กลับมาที่หน้าแรก
@@ -579,7 +570,11 @@ class _NewCasePageState extends State<NewCasePage> {
       width: 104,
       height: 30,
       decoration: BoxDecoration(
-        color: status == "ไม่ได้" ? ThemeColors().red80 : Colors.green,
+        color: status == "รอคัดกรอง"
+            ? ThemeColors().lightBlue70
+            : status == "ไม่ได้"
+                ? ThemeColors().red80
+                : ThemeColors().green70,
         borderRadius: BorderRadius.circular(24),
       ),
       child: Center(
