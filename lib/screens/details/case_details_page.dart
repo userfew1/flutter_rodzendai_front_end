@@ -10,6 +10,7 @@ import 'package:flutter_rodzendai_front_end/theme/colors.dart';
 import 'package:flutter_rodzendai_front_end/theme/text_styles.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
 
 class CaseDataListPState extends StatefulWidget {
   final String jobNumber;
@@ -128,77 +129,88 @@ class _CaseDataListPStateState extends State<CaseDataListPState> {
             }
 
             print("---------------------------------------------------");
-            selectedRowData = {
-              //! วันที่นัดหมาย เวลานัดหมาย
-              "date": row[8] != null
-                  ? convertJavaScriptDate(row[8]['v'].toString())
-                  : "ไม่ระบุ", // วันที่นัดหมาย
-              "time": row[9] != null
-                  ? convertJavaScriptTime(row[9]['v'].toString())
-                  : "ไม่ระบุ",
-              //! ==========================
-              //! ชื่อ ประเภท เบอร์ ความสามารถ วินิจฉัยโรค
-              "nameUser": row[3] != null ? row[3]['v'].toString() : "ไม่ระบุ",
-              "patientType":
-                  row[5] != null ? row[5]['v'].toString() : "ไม่ระบุ",
-              "serviceType":
-                  row[2] != null ? row[2]['v'].toString() : "ไม่ระบุ",
-              "abilityToTravel":
-                  row[6] != null ? row[6]['v'].toString() : "ไม่ระบุ",
-              "diagnosis": row[7] != null ? row[7]['v'].toString() : "ไม่ระบุ",
-              "phoneUser": row[4] != null ? row[4]['v'].toString() : "ไม่ระบุ",
-              //! ==========================
-              //! ชื่อ ดรงบาล
-              "hospital": row[10] != null ? row[10]['v'].toString() : "ไม่ระบุ",
-              //! ==========================
-              //! ชื่อผู้ตืดตาม1
-              "nameSurname1":
-                  row[20] != null ? row[20]['v'].toString() : "ไม่ระบุ",
-              "patients1":
-                  row[21] != null ? row[21]['v'].toString() : "ไม่ระบุ",
-              "phoneNumber1":
-                  row[22] != null ? row[22]['v'].toString() : "ไม่ระบุ",
-              //! ==========================
-              //! ชื่อผู้ตืดตาม2
-              "nameSurname2":
-                  row[23] != null ? row[23]['v'].toString() : "ไม่ระบุ",
-              "patients2":
-                  row[24] != null ? row[24]['v'].toString() : "ไม่ระบุ",
-              "phoneNumber2":
-                  row[25] != null ? row[25]['v'].toString() : "ไม่ระบุ",
-              //! ==========================
-              //! ข้อมูลการขอใช้รถ
-              "requestInformation":
-                  row[27] != null ? row[27]['v'].toString() : "ไม่ระบุ",
+            if (found) {
+              print("---------------------------------------------------");
+              selectedRowData = {
+                "sheet_number":
+                    row[1] != null ? row[1]['v'].toString() : "ไม่ระบุ",
 
-              //! ==========================
-              //! จุดรับผู้ป่วย
-              "locationStart":
-                  row[11] != null ? row[11]['v'].toString() : "ไม่ระบุ",
-              "provinceStart":
-                  row[12] != null ? row[12]['v'].toString() : "ไม่ระบุ",
-              "districtStart":
-                  row[13] != null ? row[13]['v'].toString() : "ไม่ระบุ",
-              "subdistrictStart":
-                  row[14] != null ? row[14]['v'].toString() : "ไม่ระบุ",
-              "landmarkStart":
-                  row[15] != null ? row[15]['v'].toString() : "ไม่ระบุ",
-              //! ==========================
-              //! จุดนำส่งผู้ป่วย
-              "locationEnd":
-                  row[16] != null ? row[16]['v'].toString() : "ไม่ระบุ",
-              "provinceEnd":
-                  row[17] != null ? row[17]['v'].toString() : "ไม่ระบุ",
-              "districtEnd":
-                  row[18] != null ? row[18]['v'].toString() : "ไม่ระบุ",
-              "subdistrictEnd":
-                  row[19] != null ? row[19]['v'].toString() : "ไม่ระบุ",
-              //! ==========================
-              //! รูป
-              "img": row[26] != null ? row[26]['v'].toString() : "ไม่ระบุ",
-            };
+                //! วันที่นัดหมาย เวลานัดหมาย
+                "date": row[8] != null
+                    ? convertJavaScriptDate(row[8]['v'].toString())
+                    : "ไม่ระบุ", // วันที่นัดหมาย
+                "time": row[9] != null
+                    ? convertJavaScriptTime(row[9]['v'].toString())
+                    : "ไม่ระบุ",
+                //! ==========================
+                //! ชื่อ ประเภท เบอร์ ความสามารถ วินิจฉัยโรค
+                "nameUser": row[3] != null ? row[3]['v'].toString() : "ไม่ระบุ",
+                "patientType":
+                    row[5] != null ? row[5]['v'].toString() : "ไม่ระบุ",
+                "serviceType":
+                    row[2] != null ? row[2]['v'].toString() : "ไม่ระบุ",
+                "abilityToTravel":
+                    row[6] != null ? row[6]['v'].toString() : "ไม่ระบุ",
+                "diagnosis":
+                    row[7] != null ? row[7]['v'].toString() : "ไม่ระบุ",
+                "phoneUser":
+                    row[4] != null ? row[4]['v'].toString() : "ไม่ระบุ",
+                //! ==========================
+                //! ชื่อโรงพยาบาล
+                "hospital":
+                    row[10] != null ? row[10]['v'].toString() : "ไม่ระบุ",
+                //! ==========================
+                //! ชื่อผู้ติดตาม1
+                "nameSurname1":
+                    row[20] != null ? row[20]['v'].toString() : "ไม่ระบุ",
+                "patients1":
+                    row[21] != null ? row[21]['v'].toString() : "ไม่ระบุ",
+                "phoneNumber1":
+                    row[22] != null ? row[22]['v'].toString() : "ไม่ระบุ",
+                //! ==========================
+                //! ชื่อผู้ติดตาม2
+                "nameSurname2":
+                    row[23] != null ? row[23]['v'].toString() : "ไม่ระบุ",
+                "patients2":
+                    row[24] != null ? row[24]['v'].toString() : "ไม่ระบุ",
+                "phoneNumber2":
+                    row[25] != null ? row[25]['v'].toString() : "ไม่ระบุ",
+                //! ==========================
+                //! ข้อมูลการขอใช้รถ
+                "requestInformation":
+                    row[27] != null ? row[27]['v'].toString() : "ไม่ระบุ",
+                //! ==========================
+                //! จุดรับผู้ป่วย
+                "locationStart":
+                    row[11] != null ? row[11]['v'].toString() : "ไม่ระบุ",
+                "provinceStart":
+                    row[12] != null ? row[12]['v'].toString() : "ไม่ระบุ",
+                "districtStart":
+                    row[13] != null ? row[13]['v'].toString() : "ไม่ระบุ",
+                "subdistrictStart":
+                    row[14] != null ? row[14]['v'].toString() : "ไม่ระบุ",
+                "landmarkStart":
+                    row[15] != null ? row[15]['v'].toString() : "ไม่ระบุ",
+                //! ==========================
+                //! จุดนำส่งผู้ป่วย
+                "locationEnd":
+                    row[16] != null ? row[16]['v'].toString() : "ไม่ระบุ",
+                "provinceEnd":
+                    row[17] != null ? row[17]['v'].toString() : "ไม่ระบุ",
+                "districtEnd":
+                    row[18] != null ? row[18]['v'].toString() : "ไม่ระบุ",
+                "subdistrictEnd":
+                    row[19] != null ? row[19]['v'].toString() : "ไม่ระบุ",
+                //! ==========================
+                //! รูป
+                "img": row[26] != null ? row[26]['v'].toString() : "ไม่ระบุ",
+              };
 
-            break; // หยุด Loop เมื่อเจอข้อมูล
+              // บันทึกข้อมูลลง SharedPreferences
+              await saveSelectedRowData(selectedRowData!);
+
+              break; // หยุด Loop เมื่อเจอข้อมูล
+            }
           }
         }
 
@@ -216,6 +228,23 @@ class _CaseDataListPStateState extends State<CaseDataListPState> {
     } catch (e) {
       print("❌ Error occurred: $e");
     }
+  }
+
+  Future<Map<String, dynamic>?> loadSelectedRowData() async {
+    final SharedPreferences prefs = await SharedPreferences.getInstance();
+    String? jsonData = prefs.getString('selectedRowData');
+
+    if (jsonData != null) {
+      return jsonDecode(jsonData) as Map<String, dynamic>;
+    } else {
+      return null;
+    }
+  }
+
+  Future<void> saveSelectedRowData(Map<String, dynamic> selectedRowData) async {
+    final SharedPreferences prefs = await SharedPreferences.getInstance();
+    String jsonData = jsonEncode(selectedRowData);
+    await prefs.setString('selectedRowData', jsonData);
   }
 
   String convertGoogleDriveUrl(String url) {

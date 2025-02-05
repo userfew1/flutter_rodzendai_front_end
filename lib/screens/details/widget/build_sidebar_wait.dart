@@ -1,6 +1,12 @@
+import 'dart:convert';
+import 'dart:developer';
+
 import 'package:flutter/material.dart';
+import 'package:flutter_rodzendai_front_end/api/api_service.dart';
+import 'package:flutter_rodzendai_front_end/model/case_model.dart';
 import 'package:flutter_rodzendai_front_end/theme/colors.dart';
 import 'package:flutter_svg/svg.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class BuildSideBarWait extends StatefulWidget {
   const BuildSideBarWait({super.key});
@@ -10,19 +16,126 @@ class BuildSideBarWait extends StatefulWidget {
 }
 
 class _BuildSideBarWaitState extends State<BuildSideBarWait> {
-  final TextEditingController _controller = TextEditingController();
   final TextEditingController _controllerDate = TextEditingController();
   final TextEditingController _controllerDistance = TextEditingController();
-
-  late bool _selectedValue = true;
-  late bool _selectedTravelValue = true;
+  final TextEditingController _dateofservice = TextEditingController();
+  final TextEditingController _timefromleaving = TextEditingController();
+  final TextEditingController _timetoreach = TextEditingController();
   final TextEditingController _controllerMap = TextEditingController();
+  String? _selectedValue;
+  bool _selectedValueCK = true;
+  late bool _selectedTravelValue = true;
   List<Map<String, TextEditingController>> travelList = [];
 
   @override
   void initState() {
     super.initState();
     addNewTravel();
+  }
+
+  Map<String, dynamic> loadSelected = {};
+
+  void sendDataToApi() async {
+    Map<String, dynamic>? savedData = await loadSelectedRowData();
+    final prefs = await SharedPreferences.getInstance();
+
+    // ✅ ดึงค่าที่บันทึกไว้
+    String? selectedBudget = prefs.getString('selected_budget');
+    String? carPickUp = prefs.getString('CarPickUp');
+    String? agency = prefs.getString('Agency');
+    String? googleMapLink = prefs.getString('google_map_link');
+    String? caseEvaluation = prefs.getString('Case_evaluation');
+    String? status = "";
+    if (caseEvaluation == "สามารถเดินทางได้") {
+      setState(() {
+        status = "ได้";
+      });
+    } else {
+      setState(() {
+        status = "ไม่ได้";
+      });
+    }
+    print("📦 Saved Data: $savedData");
+    // ข้อมูล JSON ที่จะส่ง
+
+    try {
+      Map<String, dynamic> data = {
+        "car": {
+          "licensePlate": "ABC-1234",
+          "driverName": "John Doe",
+          "contactNumber": "0812345678",
+          "carType": carPickUp,
+          "transportTypeID": "65f123456789abcdef123457"
+        },
+        "patient": {
+          "name": savedData?["nameUser"] ?? "ไม่ระบุ",
+          "phonePrimary": savedData?["phoneUser"] ?? "ไม่ระบุ",
+          "phoneSecondary": "ไม่ระบุ",
+          "pickupLocation": {
+            "address": savedData?["locationStart"] ?? "ไม่ระบุ",
+            "subDistrict": savedData?["subdistrictStart"] ?? "ไม่ระบุ",
+            "district": savedData?["districtStart"] ?? "ไม่ระบุ",
+            "province": savedData?["provinceStart"] ?? "ไม่ระบุ",
+            "landmark": "ไม่ระบุ"
+          },
+          "dropoffLocation": {
+            "address": savedData?["locationEnd"] ?? "ไม่ระบุ",
+            "subDistrict": savedData?["subdistrictEnd"] ?? "ไม่ระบุ",
+            "district": savedData?["districtEnd"] ?? "ไม่ระบุ",
+            "province": savedData?["provinceEnd"] ?? "ไม่ระบุ",
+            "landmark": savedData?["subdistrictEnd"] ?? "ไม่ระบุ",
+          }
+        },
+        "case": {
+          "caseID": savedData?["sheet_number"] ?? "ไม่ระบุ",
+          "status": status,
+          "description": "ไม่มี"
+        }
+      };
+      var response = await ApiService().postData("batch", data);
+      print("✅ Response: $response");
+    } catch (e) {
+      print("❌ Error: $e");
+    }
+  }
+
+  Future<void> saveSelectedTextValue(String value) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('selected_budget', value);
+    log(value);
+  }
+
+  Future<void> saveSelectedCarPickUp(String value) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('CarPickUp', value);
+    log(value);
+  }
+
+  Future<void> saveSelectedAgency(String value) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('Agency', value);
+    log(value);
+  }
+
+  Future<void> saveTextFieldValue(String value) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('google_map_link', value);
+  }
+
+  Future<void> saveSelectedCaseEvaluation(String value) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('Case_evaluation', value);
+    log(value);
+  }
+
+  Future<Map<String, dynamic>?> loadSelectedRowData() async {
+    final SharedPreferences prefs = await SharedPreferences.getInstance();
+    String? jsonData = prefs.getString('selectedRowData');
+
+    if (jsonData != null) {
+      return jsonDecode(jsonData);
+    }
+    return null;
   }
 
   void addNewTravel() {
@@ -37,9 +150,29 @@ class _BuildSideBarWaitState extends State<BuildSideBarWait> {
   }
 
   String _selectedTextValue = ""; // ค่าเริ่มต้นว่าง
+  String shuttleType = "";
+  String nameoftransfer = "";
   final List<String> _items = [
     "กองทุนหลักประกันสุขภาพท้องถิ่น (กทม.)",
     "กองทุนหลักประกันสุขภาพแห่งชาติ",
+  ];
+
+  final List<String> _shuttleType = [
+    "รถแท็กซี่",
+    "รถทัวร์",
+    "รถท้องถิ่น",
+    "รถไฟ",
+    "เครื่องบิน",
+    "รถเส้นด้าย"
+  ];
+  final List<String> _nameoftransfer = [
+    "ศูนย์รถแท็กซี่",
+    "ศูนย์รถทัวร์",
+    "ศูนย์รถท้องถิ่น",
+    "ศูนย์รถไฟ",
+    "ศูนย์เครื่องบิน",
+    "ศูนย์รถเส้นด้าย",
+    "Bolt"
   ];
   final List<String> _itemstext = [
     "ผู้ป่วยยกเลิกนัดหมาย",
@@ -95,7 +228,9 @@ class _BuildSideBarWaitState extends State<BuildSideBarWait> {
                             )
                           ],
                         ),
-                        SizedBox(height: 24,),
+                        SizedBox(
+                          height: 24,
+                        ),
                         Container(
                           width: 439,
                           decoration: BoxDecoration(
@@ -136,13 +271,21 @@ class _BuildSideBarWaitState extends State<BuildSideBarWait> {
                                     Expanded(
                                       child: Row(
                                         children: [
-                                          Radio<bool>(
+                                          Radio<String>(
                                             value:
-                                                true, // ใช้ค่า true แทน "เดินทางได้"
-                                            groupValue: _selectedValue,
+                                                "สามารถเดินทางได้", // ใช้ข้อความแทน boolean
+                                            groupValue:
+                                                _selectedValue, // ใช้ข้อความที่เลือก
                                             onChanged: (value) {
                                               setState(() {
-                                                _selectedValue = value ?? true;
+                                                _selectedValue = value!;
+                                                _selectedValueCK = true;
+                                                loadSelected[
+                                                        'Case_evaluation'] =
+                                                    _selectedValue; // บันทึกข้อความ
+                                                saveSelectedCaseEvaluation(
+                                                    _selectedValue ??
+                                                        "สามารถเดินทางได้"); // กำหนดค่าเริ่มต้น
                                               });
                                             },
                                           ),
@@ -150,7 +293,8 @@ class _BuildSideBarWaitState extends State<BuildSideBarWait> {
                                             "สามารถเดินทางได้",
                                             style: TextStyle(
                                               fontSize: 16,
-                                              color: _selectedValue
+                                              color: "สามารถเดินทางได้" ==
+                                                      _selectedValue
                                                   ? ThemeColors().lightBlue60
                                                   : ThemeColors().gray70,
                                             ),
@@ -162,13 +306,21 @@ class _BuildSideBarWaitState extends State<BuildSideBarWait> {
                                     Expanded(
                                       child: Row(
                                         children: [
-                                          Radio<bool>(
+                                          Radio<String>(
                                             value:
-                                                false, // ใช้ค่า false แทน "ไม่เดินทางได้"
-                                            groupValue: _selectedValue,
+                                                "ไม่สามารถเดินทางได้", // ใช้ข้อความแทน boolean
+                                            groupValue:
+                                                _selectedValue, // ใช้ข้อความที่เลือก
                                             onChanged: (value) {
                                               setState(() {
-                                                _selectedValue = value ?? false;
+                                                _selectedValue = value!;
+                                                _selectedValueCK = false;
+                                                loadSelected[
+                                                        'Case_evaluation'] =
+                                                    _selectedValue; // บันทึกข้อความ
+                                                saveSelectedCaseEvaluation(
+                                                    _selectedValue ??
+                                                        "ไม่สามารถเดินทางได้"); // กำหนดค่าเริ่มต้น
                                               });
                                             },
                                           ),
@@ -176,7 +328,8 @@ class _BuildSideBarWaitState extends State<BuildSideBarWait> {
                                             "ไม่สามารถเดินทางได้",
                                             style: TextStyle(
                                               fontSize: 16,
-                                              color: !_selectedValue
+                                              color: "ไม่สามารถเดินทางได้" ==
+                                                      _selectedValue
                                                   ? ThemeColors().lightBlue60
                                                   : ThemeColors().gray70,
                                             ),
@@ -189,7 +342,7 @@ class _BuildSideBarWaitState extends State<BuildSideBarWait> {
                                 const SizedBox(
                                   height: 24,
                                 ),
-                                _selectedValue
+                                _selectedValueCK
                                     ? Container(
                                         child: Column(
                                           children: [
@@ -276,6 +429,8 @@ class _BuildSideBarWaitState extends State<BuildSideBarWait> {
                                                     setState(() {
                                                       _selectedTextValue =
                                                           newValue!;
+                                                      saveSelectedTextValue(
+                                                          _selectedTextValue);
                                                     });
                                                   },
                                                 ),
@@ -442,10 +597,10 @@ class _BuildSideBarWaitState extends State<BuildSideBarWait> {
                                                                       DropdownButtonHideUnderline(
                                                                     child: DropdownButton<
                                                                         String>(
-                                                                      value: _selectedTextValue
+                                                                      value: shuttleType
                                                                               .isEmpty
                                                                           ? null
-                                                                          : _selectedTextValue,
+                                                                          : shuttleType,
                                                                       hint:
                                                                           Text(
                                                                         "ประเภทรถรับส่ง", // ข้อความเริ่มต้น
@@ -486,7 +641,7 @@ class _BuildSideBarWaitState extends State<BuildSideBarWait> {
                                                                         fontSize:
                                                                             16,
                                                                       ),
-                                                                      items: _items.map(
+                                                                      items: _shuttleType.map(
                                                                           (String
                                                                               value) {
                                                                         return DropdownMenuItem<
@@ -509,8 +664,10 @@ class _BuildSideBarWaitState extends State<BuildSideBarWait> {
                                                                               newValue) {
                                                                         setState(
                                                                             () {
-                                                                          _selectedTextValue =
+                                                                          shuttleType =
                                                                               newValue!;
+                                                                          saveSelectedCarPickUp(
+                                                                              shuttleType);
                                                                         });
                                                                       },
                                                                     ),
@@ -575,10 +732,10 @@ class _BuildSideBarWaitState extends State<BuildSideBarWait> {
                                                                       DropdownButtonHideUnderline(
                                                                     child: DropdownButton<
                                                                         String>(
-                                                                      value: _selectedTextValue
+                                                                      value: nameoftransfer
                                                                               .isEmpty
                                                                           ? null
-                                                                          : _selectedTextValue,
+                                                                          : nameoftransfer,
                                                                       hint:
                                                                           Text(
                                                                         "ชื่อหน่วยบริการ", // ข้อความเริ่มต้น
@@ -619,7 +776,7 @@ class _BuildSideBarWaitState extends State<BuildSideBarWait> {
                                                                         fontSize:
                                                                             16,
                                                                       ),
-                                                                      items: _items.map(
+                                                                      items: _nameoftransfer.map(
                                                                           (String
                                                                               value) {
                                                                         return DropdownMenuItem<
@@ -642,8 +799,10 @@ class _BuildSideBarWaitState extends State<BuildSideBarWait> {
                                                                               newValue) {
                                                                         setState(
                                                                             () {
-                                                                          _selectedTextValue =
+                                                                          nameoftransfer =
                                                                               newValue!;
+                                                                          saveSelectedAgency(
+                                                                              nameoftransfer);
                                                                         });
                                                                       },
                                                                     ),
@@ -733,8 +892,8 @@ class _BuildSideBarWaitState extends State<BuildSideBarWait> {
                                                                   ),
                                                                   onChanged:
                                                                       (value) {
-                                                                    print(
-                                                                        "Input: $value"); // ✅ ดักจับข้อความใหม่
+                                                                    saveTextFieldValue(
+                                                                        value);
                                                                   },
                                                                 ),
                                                               ),
@@ -805,7 +964,7 @@ class _BuildSideBarWaitState extends State<BuildSideBarWait> {
                                                                         child:
                                                                             TextField(
                                                                           controller:
-                                                                              _controllerDistance,
+                                                                              _dateofservice,
                                                                           decoration:
                                                                               InputDecoration(
                                                                             border:
@@ -992,7 +1151,7 @@ class _BuildSideBarWaitState extends State<BuildSideBarWait> {
                                                                         child:
                                                                             TextField(
                                                                           controller:
-                                                                              _controllerDistance,
+                                                                              _timefromleaving,
                                                                           decoration:
                                                                               InputDecoration(
                                                                             border:
@@ -1049,7 +1208,7 @@ class _BuildSideBarWaitState extends State<BuildSideBarWait> {
                                                                         width:
                                                                             4),
                                                                     Text(
-                                                                      "เวลาออกจากจุดรับผู้ป่วย",
+                                                                      "เวลาถึงจุดส่งผู้ป่วย",
                                                                       style:
                                                                           TextStyle(
                                                                         fontSize:
@@ -1085,7 +1244,7 @@ class _BuildSideBarWaitState extends State<BuildSideBarWait> {
                                                                         child:
                                                                             TextField(
                                                                           controller:
-                                                                              _controllerDistance,
+                                                                              _timetoreach,
                                                                           decoration:
                                                                               InputDecoration(
                                                                             border:
@@ -1346,7 +1505,7 @@ class _BuildSideBarWaitState extends State<BuildSideBarWait> {
                             ),
                           ),
                         ),
-                        _selectedValue
+                        _selectedValueCK
                             ? SizedBox(
                                 height: 24,
                               )
@@ -1368,9 +1527,7 @@ class _BuildSideBarWaitState extends State<BuildSideBarWait> {
 
   Widget _buildConnectButton() {
     return GestureDetector(
-      onTap: () {
-        setState(() {});
-      },
+      onTap: sendDataToApi,
       child: Container(
         width: 439,
         height: 48,

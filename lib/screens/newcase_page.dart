@@ -121,14 +121,10 @@ class _NewCasePageState extends State<NewCasePage> {
       "ไม่สามารถเดินทางได้"
     ];
 
-    int totalPages = (caseDataList.length / rowsPerPage).ceil();
-
-// กรองข้อมูลตาม Tab ที่เลือก
     List<Map<String, String>> filteredData = caseDataList.where((data) {
       String? status = data["status"]; // ดึงค่า status จริงจากข้อมูล
       if (selectedTabIndex == 0) return true; // "ทั้งหมด"
 
-      // แปลงค่า tabs ให้ตรงกับค่า status จริง
       if (selectedTabIndex == 2) return status == "ได้"; // "สามารถเดินทางได้"
       if (selectedTabIndex == 3)
         return status == "ไม่ได้"; // "ไม่สามารถเดินทางได้"
@@ -136,7 +132,6 @@ class _NewCasePageState extends State<NewCasePage> {
       return status == "รอคัดกรอง"; // "รอคัดกรอง"
     }).toList();
 
-// คำนวณข้อมูลที่จะแสดงในหน้าปัจจุบัน
     List<Map<String, String>> displayedData = filteredData
         .where((data) =>
             data["date"] != null &&
@@ -147,6 +142,7 @@ class _NewCasePageState extends State<NewCasePage> {
         .take(rowsPerPage)
         .toList();
 
+    int totalPages = (filteredData.length / rowsPerPage).ceil();
     return Padding(
       padding: showOverlayPage
           ? const EdgeInsets.all(30.0)
@@ -440,12 +436,12 @@ class _NewCasePageState extends State<NewCasePage> {
                     },
                   ),
                 ),
-                _buildPagination(totalPages),
+                _buildPagination(totalPages, filteredData.length)
               ],
             )
           : CaseDataListPState(
               jobNumber: selectedCase?["jobNumber"] ?? "",
-              status :selectedCase?["status"] ?? "",
+              status: selectedCase?["status"] ?? "",
               onBackPressed: () {
                 setState(() {
                   showOverlayPage = true; // กลับมาที่หน้าแรก
@@ -483,15 +479,15 @@ class _NewCasePageState extends State<NewCasePage> {
     );
   }
 
-  Widget _buildPagination(int totalPages) {
+  Widget _buildPagination(int totalPages, int totalData) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        // แสดงข้อมูลจำนวนแถว
+        // ✅ แสดงข้อมูลตาม filteredData จริง
         Text(
           "แสดงข้อมูล ${(currentPage - 1) * rowsPerPage + 1} "
-          "ถึง ${(currentPage * rowsPerPage).clamp(0, caseDataList.length)} "
-          "จาก ${caseDataList.length} แถว",
+          "ถึง ${(currentPage * rowsPerPage).clamp(0, totalData)} "
+          "จาก $totalData แถว",
           style: const TextStyle(fontSize: 14, color: Colors.grey),
         ),
         Row(

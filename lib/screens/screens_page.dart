@@ -20,7 +20,6 @@ class ScreensPage extends StatefulWidget {
 }
 
 class _ScreensPageState extends State<ScreensPage> {
-
   final themeColors = ThemeColors();
   int selectedPageIndex = 0;
   bool isSidebarOpen = true; // ✅ ตัวแปรควบคุม Sidebar
@@ -46,7 +45,7 @@ class _ScreensPageState extends State<ScreensPage> {
     KeyedSubtree(
         key: UniqueKey(),
         child: NewCasePage()), // ✅ Use KeyedSubtree with UniqueKey()
-     GetDataGoogleSheets(),
+    const ProjectCase1Page(),
     const ProjectCase2Page(),
     const SchedulePage(),
     const CloseCaseReportPage(),
