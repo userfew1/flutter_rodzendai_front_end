@@ -1,16 +1,16 @@
 import 'package:flutter/material.dart';
 
 class ThemeTextStyles {
-  // Body Text
+  
   TextStyle body12_14({
     FontWeight fontWeight = FontWeight.w400,
-    Color color = Colors.black, // เพิ่ม default color
+    Color color = Colors.black, 
   }) =>
       TextStyle(
         fontSize: 12,
         height: 14 / 12,
         fontWeight: fontWeight,
-        color: color, // ใช้ color
+        color: color, 
         decoration: TextDecoration.none,
       );
 
@@ -62,7 +62,7 @@ class ThemeTextStyles {
         decoration: TextDecoration.none,
       );
 
-  // Headings
+  
   TextStyle head12({
     FontWeight fontWeight = FontWeight.w400,
     Color color = Colors.black,
