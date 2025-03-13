@@ -2,28 +2,63 @@ import 'package:flutter/material.dart';
 import 'package:flutter_rodzendai_front_end/theme/colors.dart';
 import 'package:flutter_svg/svg.dart';
 
-class BuildSideBarWait extends StatefulWidget {
-  const BuildSideBarWait({super.key});
+class BarPendingScreening extends StatefulWidget {
+  const BarPendingScreening({super.key});
 
   @override
-  State<BuildSideBarWait> createState() => _BuildSideBarWaitState();
+  State<BarPendingScreening> createState() => _BarPendingScreeningState();
 }
 
-class _BuildSideBarWaitState extends State<BuildSideBarWait> {
-  final TextEditingController _controller = TextEditingController();
+class _BarPendingScreeningState extends State<BarPendingScreening> {
   final TextEditingController _controllerDate = TextEditingController();
   final TextEditingController _controllerDistance = TextEditingController();
-
-  late bool _selectedValue = true;
-  late bool _selectedTravelValue = true;
+  final TextEditingController _dateofservice = TextEditingController();
+  final TextEditingController _timefromleaving = TextEditingController();
+  final TextEditingController _timetoreach = TextEditingController();
   final TextEditingController _controllerMap = TextEditingController();
+  String? _selectedValue;
+  bool _selectedValueCK = true;
+  late bool _selectedTravelValue = true;
   List<Map<String, TextEditingController>> travelList = [];
 
+
+
+  Map<String, dynamic> loadSelected = {};
+
   @override
-  void initState() {
-    super.initState();
-    addNewTravel();
-  }
+void initState() {
+  super.initState();
+  addNewTravel();
+  _generateMockData();
+}
+
+void _generateMockData() {
+  setState(() {
+    _controllerDate.text = "2025-02-15";
+    _controllerDistance.text = "12.5";
+    _dateofservice.text = "2025-02-15";
+    _timefromleaving.text = "08:30";
+    _timetoreach.text = "09:15";
+    _controllerMap.text = "https://maps.google.com/?q=13.7563,100.5018";
+
+    _selectedValue = "สามารถเดินทางได้";
+    _selectedValueCK = true;
+    _selectedTravelValue = true;
+    _selectedTextValue = "กองทุนหลักประกันสุขภาพแห่งชาติ";
+    shuttleType = "รถแท็กซี่";
+    nameoftransfer = "ศูนย์รถแท็กซี่";
+
+    travelList = List.generate(2, (index) {
+      return {
+        'map': TextEditingController(text: "https://maps.google.com/?q=13.7$index,100.5$index"),
+        'date': TextEditingController(text: "2025-02-${15 + index}"),
+        'distance': TextEditingController(text: "${(index + 1) * 10}"),
+        'time': TextEditingController(text: "${(index + 8)}:00"),
+      };
+    });
+  });
+}
+  
 
   void addNewTravel() {
     setState(() {
@@ -36,10 +71,31 @@ class _BuildSideBarWaitState extends State<BuildSideBarWait> {
     });
   }
 
-  String _selectedTextValue = ""; // ค่าเริ่มต้นว่าง
+
+  String _selectedTextValue = "";
+  String shuttleType = "";
+  String nameoftransfer = "";
   final List<String> _items = [
     "กองทุนหลักประกันสุขภาพท้องถิ่น (กทม.)",
     "กองทุนหลักประกันสุขภาพแห่งชาติ",
+  ];
+
+  final List<String> _shuttleType = [
+    "รถแท็กซี่",
+    "รถทัวร์",
+    "รถท้องถิ่น",
+    "รถไฟ",
+    "เครื่องบิน",
+    "รถเส้นด้าย"
+  ];
+  final List<String> _nameoftransfer = [
+    "ศูนย์รถแท็กซี่",
+    "ศูนย์รถทัวร์",
+    "ศูนย์รถท้องถิ่น",
+    "ศูนย์รถไฟ",
+    "ศูนย์เครื่องบิน",
+    "ศูนย์รถเส้นด้าย",
+    "Bolt"
   ];
   final List<String> _itemstext = [
     "ผู้ป่วยยกเลิกนัดหมาย",
@@ -61,7 +117,7 @@ class _BuildSideBarWaitState extends State<BuildSideBarWait> {
               child: SingleChildScrollView(
                 child: Container(
                   width: 487,
-                  constraints: BoxConstraints(minHeight: 0),
+                  constraints: const BoxConstraints(minHeight: 0),
                   decoration: BoxDecoration(
                     color: ThemeColors().background,
                     borderRadius: BorderRadius.circular(24),
@@ -95,7 +151,9 @@ class _BuildSideBarWaitState extends State<BuildSideBarWait> {
                             )
                           ],
                         ),
-                        SizedBox(height: 24,),
+                        const SizedBox(
+                          height: 24,
+                        ),
                         Container(
                           width: 439,
                           decoration: BoxDecoration(
@@ -132,17 +190,18 @@ class _BuildSideBarWaitState extends State<BuildSideBarWait> {
                                 Row(
                                   mainAxisAlignment: MainAxisAlignment.start,
                                   children: [
-                                    // Radio 1 - เดินทางได้
                                     Expanded(
                                       child: Row(
                                         children: [
-                                          Radio<bool>(
-                                            value:
-                                                true, // ใช้ค่า true แทน "เดินทางได้"
+                                          Radio<String>(
+                                            value: "สามารถเดินทางได้",
                                             groupValue: _selectedValue,
                                             onChanged: (value) {
                                               setState(() {
-                                                _selectedValue = value ?? true;
+                                                _selectedValue = value!;
+                                                _selectedValueCK = true;
+                                            
+                       
                                               });
                                             },
                                           ),
@@ -150,7 +209,8 @@ class _BuildSideBarWaitState extends State<BuildSideBarWait> {
                                             "สามารถเดินทางได้",
                                             style: TextStyle(
                                               fontSize: 16,
-                                              color: _selectedValue
+                                              color: "สามารถเดินทางได้" ==
+                                                      _selectedValue
                                                   ? ThemeColors().lightBlue60
                                                   : ThemeColors().gray70,
                                             ),
@@ -158,17 +218,18 @@ class _BuildSideBarWaitState extends State<BuildSideBarWait> {
                                         ],
                                       ),
                                     ),
-                                    // Radio 2 - ไม่สามารถเดินทางได้
                                     Expanded(
                                       child: Row(
                                         children: [
-                                          Radio<bool>(
-                                            value:
-                                                false, // ใช้ค่า false แทน "ไม่เดินทางได้"
+                                          Radio<String>(
+                                            value: "ไม่สามารถเดินทางได้",
                                             groupValue: _selectedValue,
                                             onChanged: (value) {
                                               setState(() {
-                                                _selectedValue = value ?? false;
+                                                _selectedValue = value!;
+                                                _selectedValueCK = false;
+                        
+        
                                               });
                                             },
                                           ),
@@ -176,7 +237,8 @@ class _BuildSideBarWaitState extends State<BuildSideBarWait> {
                                             "ไม่สามารถเดินทางได้",
                                             style: TextStyle(
                                               fontSize: 16,
-                                              color: !_selectedValue
+                                              color: "ไม่สามารถเดินทางได้" ==
+                                                      _selectedValue
                                                   ? ThemeColors().lightBlue60
                                                   : ThemeColors().gray70,
                                             ),
@@ -189,7 +251,7 @@ class _BuildSideBarWaitState extends State<BuildSideBarWait> {
                                 const SizedBox(
                                   height: 24,
                                 ),
-                                _selectedValue
+                                _selectedValueCK
                                     ? Container(
                                         child: Column(
                                           children: [
@@ -224,8 +286,7 @@ class _BuildSideBarWaitState extends State<BuildSideBarWait> {
                                                       horizontal: 24,
                                                       vertical: 4),
                                               decoration: BoxDecoration(
-                                                color: ThemeColors()
-                                                    .background, // สีพื้นหลังของ Dropdown
+                                                color: ThemeColors().background,
                                                 borderRadius:
                                                     BorderRadius.circular(8),
                                               ),
@@ -237,10 +298,10 @@ class _BuildSideBarWaitState extends State<BuildSideBarWait> {
                                                           ? null
                                                           : _selectedTextValue,
                                                   hint: Text(
-                                                    "เบิกงบประมาณ", // ข้อความเริ่มต้น
+                                                    "เบิกงบประมาณ",
                                                     style: TextStyle(
-                                                      color: ThemeColors()
-                                                          .gray70, // สีข้อความเริ่มต้น
+                                                      color:
+                                                          ThemeColors().gray70,
                                                       fontSize: 16,
                                                     ),
                                                   ),
@@ -249,11 +310,11 @@ class _BuildSideBarWaitState extends State<BuildSideBarWait> {
                                                     height: 24,
                                                     width: 24,
                                                   ),
-                                                  dropdownColor: ThemeColors()
-                                                      .background, // สีพื้นหลังของเมนู
+                                                  dropdownColor:
+                                                      ThemeColors().background,
                                                   style: TextStyle(
                                                     color: ThemeColors()
-                                                        .lightBlue60, // สีข้อความเมื่อเลือกแล้ว
+                                                        .lightBlue60,
                                                     fontSize: 16,
                                                   ),
                                                   items: _items
@@ -265,7 +326,7 @@ class _BuildSideBarWaitState extends State<BuildSideBarWait> {
                                                         value,
                                                         style: TextStyle(
                                                           color: ThemeColors()
-                                                              .lightBlue60, // สีของข้อความในรายการ
+                                                              .lightBlue60,
                                                           fontSize: 16,
                                                         ),
                                                       ),
@@ -276,6 +337,7 @@ class _BuildSideBarWaitState extends State<BuildSideBarWait> {
                                                     setState(() {
                                                       _selectedTextValue =
                                                           newValue!;
+                                                
                                                     });
                                                   },
                                                 ),
@@ -311,13 +373,11 @@ class _BuildSideBarWaitState extends State<BuildSideBarWait> {
                                               mainAxisAlignment:
                                                   MainAxisAlignment.start,
                                               children: [
-                                                // Radio 1 - แบบต่อเดียว
                                                 Expanded(
                                                   child: Row(
                                                     children: [
                                                       Radio<bool>(
-                                                        value:
-                                                            true, // ใช้ค่า true แทน "การเดินทาง"
+                                                        value: true,
                                                         groupValue:
                                                             _selectedTravelValue,
                                                         onChanged: (value) {
@@ -341,13 +401,11 @@ class _BuildSideBarWaitState extends State<BuildSideBarWait> {
                                                     ],
                                                   ),
                                                 ),
-                                                // Radio 2 - แบบหลายต่อ
                                                 Expanded(
                                                   child: Row(
                                                     children: [
                                                       Radio<bool>(
-                                                        value:
-                                                            false, // ใช้ค่า false แทน "ไม่เดินทางได้"
+                                                        value: false,
                                                         groupValue:
                                                             _selectedTravelValue,
                                                         onChanged: (value) {
@@ -385,7 +443,6 @@ class _BuildSideBarWaitState extends State<BuildSideBarWait> {
                                                               MainAxisAlignment
                                                                   .spaceBetween,
                                                           children: [
-                                                            // Dropdown แรก
                                                             Column(
                                                               crossAxisAlignment:
                                                                   CrossAxisAlignment
@@ -395,12 +452,12 @@ class _BuildSideBarWaitState extends State<BuildSideBarWait> {
                                                                   children: [
                                                                     SvgPicture
                                                                         .asset(
-                                                                      'assets/icons_detali/category.svg', // ไอคอนของประเภทการรับส่ง
+                                                                      'assets/icons_detali/category.svg',
                                                                       height:
                                                                           24,
                                                                       width: 24,
                                                                       color: ThemeColors()
-                                                                          .orange50, // สีของไอคอน
+                                                                          .orange50,
                                                                     ),
                                                                     const SizedBox(
                                                                         width:
@@ -433,7 +490,7 @@ class _BuildSideBarWaitState extends State<BuildSideBarWait> {
                                                                   decoration:
                                                                       BoxDecoration(
                                                                     color: ThemeColors()
-                                                                        .background, // สีพื้นหลังของ Dropdown
+                                                                        .background,
                                                                     borderRadius:
                                                                         BorderRadius
                                                                             .circular(8),
@@ -442,17 +499,17 @@ class _BuildSideBarWaitState extends State<BuildSideBarWait> {
                                                                       DropdownButtonHideUnderline(
                                                                     child: DropdownButton<
                                                                         String>(
-                                                                      value: _selectedTextValue
+                                                                      value: shuttleType
                                                                               .isEmpty
                                                                           ? null
-                                                                          : _selectedTextValue,
+                                                                          : shuttleType,
                                                                       hint:
                                                                           Text(
-                                                                        "ประเภทรถรับส่ง", // ข้อความเริ่มต้น
+                                                                        "ประเภทรถรับส่ง",
                                                                         style:
                                                                             TextStyle(
                                                                           color:
-                                                                              ThemeColors().gray70, // สีข้อความเริ่มต้น
+                                                                              ThemeColors().gray70,
                                                                           fontSize:
                                                                               16,
                                                                         ),
@@ -462,31 +519,31 @@ class _BuildSideBarWaitState extends State<BuildSideBarWait> {
                                                                         padding: const EdgeInsets
                                                                             .only(
                                                                             right:
-                                                                                8), // ปรับตำแหน่งของไอคอน
+                                                                                8),
                                                                         child: SvgPicture
                                                                             .asset(
-                                                                          'assets/icons_detali/drop.svg', // ไอคอน dropdown
+                                                                          'assets/icons_detali/drop.svg',
                                                                           height:
-                                                                              20, // ขนาดที่เล็กลง
+                                                                              20,
                                                                           width:
                                                                               20,
                                                                         ),
                                                                       ),
                                                                       isDense:
-                                                                          true, // ลดความสูงของ Dropdown ให้พอดีกับกล่อง
+                                                                          true,
                                                                       isExpanded:
-                                                                          true, // ให้ Dropdown ขยายเต็มกล่อง
+                                                                          true,
                                                                       dropdownColor:
                                                                           ThemeColors()
                                                                               .background,
                                                                       style:
                                                                           TextStyle(
                                                                         color: ThemeColors()
-                                                                            .lightBlue60, // สีข้อความเมื่อเลือกแล้ว
+                                                                            .lightBlue60,
                                                                         fontSize:
                                                                             16,
                                                                       ),
-                                                                      items: _items.map(
+                                                                      items: _shuttleType.map(
                                                                           (String
                                                                               value) {
                                                                         return DropdownMenuItem<
@@ -509,8 +566,9 @@ class _BuildSideBarWaitState extends State<BuildSideBarWait> {
                                                                               newValue) {
                                                                         setState(
                                                                             () {
-                                                                          _selectedTextValue =
+                                                                          shuttleType =
                                                                               newValue!;
+                                                                        
                                                                         });
                                                                       },
                                                                     ),
@@ -518,7 +576,6 @@ class _BuildSideBarWaitState extends State<BuildSideBarWait> {
                                                                 ),
                                                               ],
                                                             ),
-                                                            // Dropdown ที่สอง
                                                             Column(
                                                               crossAxisAlignment:
                                                                   CrossAxisAlignment
@@ -528,12 +585,12 @@ class _BuildSideBarWaitState extends State<BuildSideBarWait> {
                                                                   children: [
                                                                     SvgPicture
                                                                         .asset(
-                                                                      'assets/icons_detali/company.svg', // ไอคอนชื่อหน่วยบริการ
+                                                                      'assets/icons_detali/company.svg',
                                                                       height:
                                                                           24,
                                                                       width: 24,
                                                                       color: ThemeColors()
-                                                                          .orange50, // สีของไอคอน
+                                                                          .orange50,
                                                                     ),
                                                                     const SizedBox(
                                                                         width:
@@ -566,7 +623,7 @@ class _BuildSideBarWaitState extends State<BuildSideBarWait> {
                                                                   decoration:
                                                                       BoxDecoration(
                                                                     color: ThemeColors()
-                                                                        .background, // สีพื้นหลังของ Dropdown
+                                                                        .background,
                                                                     borderRadius:
                                                                         BorderRadius
                                                                             .circular(8),
@@ -575,17 +632,17 @@ class _BuildSideBarWaitState extends State<BuildSideBarWait> {
                                                                       DropdownButtonHideUnderline(
                                                                     child: DropdownButton<
                                                                         String>(
-                                                                      value: _selectedTextValue
+                                                                      value: nameoftransfer
                                                                               .isEmpty
                                                                           ? null
-                                                                          : _selectedTextValue,
+                                                                          : nameoftransfer,
                                                                       hint:
                                                                           Text(
-                                                                        "ชื่อหน่วยบริการ", // ข้อความเริ่มต้น
+                                                                        "ชื่อหน่วยบริการ",
                                                                         style:
                                                                             TextStyle(
                                                                           color:
-                                                                              ThemeColors().gray70, // สีข้อความเริ่มต้น
+                                                                              ThemeColors().gray70,
                                                                           fontSize:
                                                                               16,
                                                                         ),
@@ -595,31 +652,31 @@ class _BuildSideBarWaitState extends State<BuildSideBarWait> {
                                                                         padding: const EdgeInsets
                                                                             .only(
                                                                             right:
-                                                                                8), // ปรับตำแหน่งของไอคอน
+                                                                                8),
                                                                         child: SvgPicture
                                                                             .asset(
-                                                                          'assets/icons_detali/drop.svg', // ไอคอน dropdown
+                                                                          'assets/icons_detali/drop.svg',
                                                                           height:
-                                                                              20, // ขนาดที่เล็กลง
+                                                                              20,
                                                                           width:
                                                                               20,
                                                                         ),
                                                                       ),
                                                                       isDense:
-                                                                          true, // ลดความสูงของ Dropdown ให้พอดีกับกล่อง
+                                                                          true,
                                                                       isExpanded:
-                                                                          true, // ให้ Dropdown ขยายเต็มกล่อง
+                                                                          true,
                                                                       dropdownColor:
                                                                           ThemeColors()
                                                                               .background,
                                                                       style:
                                                                           TextStyle(
                                                                         color: ThemeColors()
-                                                                            .lightBlue60, // สีข้อความเมื่อเลือกแล้ว
+                                                                            .lightBlue60,
                                                                         fontSize:
                                                                             16,
                                                                       ),
-                                                                      items: _items.map(
+                                                                      items: _nameoftransfer.map(
                                                                           (String
                                                                               value) {
                                                                         return DropdownMenuItem<
@@ -642,8 +699,9 @@ class _BuildSideBarWaitState extends State<BuildSideBarWait> {
                                                                               newValue) {
                                                                         setState(
                                                                             () {
-                                                                          _selectedTextValue =
+                                                                          nameoftransfer =
                                                                               newValue!;
+                                                                        
                                                                         });
                                                                       },
                                                                     ),
@@ -693,7 +751,7 @@ class _BuildSideBarWaitState extends State<BuildSideBarWait> {
                                                           decoration:
                                                               BoxDecoration(
                                                             color: ThemeColors()
-                                                                .background, // สีพื้นหลังของ TextField
+                                                                .background,
                                                             borderRadius:
                                                                 BorderRadius
                                                                     .circular(
@@ -711,15 +769,16 @@ class _BuildSideBarWaitState extends State<BuildSideBarWait> {
                                                                     contentPadding: const EdgeInsets
                                                                         .symmetric(
                                                                         horizontal:
-                                                                            0), // ปรับให้ข้อความใน TextField อยู่ในตำแหน่งที่เหมาะสม
-                                                                    border: InputBorder
-                                                                        .none, // ซ่อนเส้นขอบ
+                                                                            0),
+                                                                    border:
+                                                                        InputBorder
+                                                                            .none,
                                                                     hintText:
-                                                                        "ลิงก์กูเกิลแมป", // ข้อความเริ่มต้น
+                                                                        "ลิงก์กูเกิลแมป",
                                                                     hintStyle:
                                                                         TextStyle(
                                                                       color: ThemeColors()
-                                                                          .gray70, // ✅ สีที่อ่านง่ายขึ้น
+                                                                          .gray70,
                                                                       fontSize:
                                                                           14,
                                                                     ),
@@ -729,12 +788,11 @@ class _BuildSideBarWaitState extends State<BuildSideBarWait> {
                                                                     fontSize:
                                                                         14,
                                                                     color: ThemeColors()
-                                                                        .lightBlue60, // ✅ สีข้อความที่พิมพ์
+                                                                        .lightBlue60,
                                                                   ),
                                                                   onChanged:
                                                                       (value) {
-                                                                    print(
-                                                                        "Input: $value"); // ✅ ดักจับข้อความใหม่
+                                                                  
                                                                   },
                                                                 ),
                                                               ),
@@ -805,7 +863,7 @@ class _BuildSideBarWaitState extends State<BuildSideBarWait> {
                                                                         child:
                                                                             TextField(
                                                                           controller:
-                                                                              _controllerDistance,
+                                                                              _dateofservice,
                                                                           decoration:
                                                                               InputDecoration(
                                                                             border:
@@ -829,7 +887,7 @@ class _BuildSideBarWaitState extends State<BuildSideBarWait> {
                                                                       ),
                                                                       SvgPicture
                                                                           .asset(
-                                                                        'assets/icons_detali/calendar.svg', // ไอคอน Dropdown
+                                                                        'assets/icons_detali/calendar.svg',
                                                                         height:
                                                                             24,
                                                                         width:
@@ -927,7 +985,6 @@ class _BuildSideBarWaitState extends State<BuildSideBarWait> {
                                                             ),
                                                           ],
                                                         ),
-                                                        //!
                                                         const SizedBox(
                                                           height: 24,
                                                         ),
@@ -992,7 +1049,7 @@ class _BuildSideBarWaitState extends State<BuildSideBarWait> {
                                                                         child:
                                                                             TextField(
                                                                           controller:
-                                                                              _controllerDistance,
+                                                                              _timefromleaving,
                                                                           decoration:
                                                                               InputDecoration(
                                                                             border:
@@ -1016,7 +1073,7 @@ class _BuildSideBarWaitState extends State<BuildSideBarWait> {
                                                                       ),
                                                                       SvgPicture
                                                                           .asset(
-                                                                        'assets/icons_detali/time.svg', // ไอคอน Dropdown
+                                                                        'assets/icons_detali/time.svg',
                                                                         height:
                                                                             24,
                                                                         width:
@@ -1049,7 +1106,7 @@ class _BuildSideBarWaitState extends State<BuildSideBarWait> {
                                                                         width:
                                                                             4),
                                                                     Text(
-                                                                      "เวลาออกจากจุดรับผู้ป่วย",
+                                                                      "เวลาถึงจุดส่งผู้ป่วย",
                                                                       style:
                                                                           TextStyle(
                                                                         fontSize:
@@ -1085,7 +1142,7 @@ class _BuildSideBarWaitState extends State<BuildSideBarWait> {
                                                                         child:
                                                                             TextField(
                                                                           controller:
-                                                                              _controllerDistance,
+                                                                              _timetoreach,
                                                                           decoration:
                                                                               InputDecoration(
                                                                             border:
@@ -1109,7 +1166,7 @@ class _BuildSideBarWaitState extends State<BuildSideBarWait> {
                                                                       ),
                                                                       SvgPicture
                                                                           .asset(
-                                                                        'assets/icons_detali/time.svg', // ไอคอน Dropdown
+                                                                        'assets/icons_detali/time.svg',
                                                                         height:
                                                                             24,
                                                                         width:
@@ -1127,14 +1184,12 @@ class _BuildSideBarWaitState extends State<BuildSideBarWait> {
                                                       ],
                                                     ),
                                                   )
-                                                :
-                                                //!
-                                                Column(
+                                                : Column(
                                                     children: [
                                                       ListView.builder(
                                                         shrinkWrap: true,
                                                         physics:
-                                                            NeverScrollableScrollPhysics(),
+                                                            const NeverScrollableScrollPhysics(),
                                                         itemCount:
                                                             travelList.length,
                                                         itemBuilder:
@@ -1143,7 +1198,7 @@ class _BuildSideBarWaitState extends State<BuildSideBarWait> {
                                                               index);
                                                         },
                                                       ),
-                                                      SizedBox(height: 16),
+                                                      const SizedBox(height: 16),
                                                       GestureDetector(
                                                         onTap: addNewTravel,
                                                         child: Container(
@@ -1178,8 +1233,6 @@ class _BuildSideBarWaitState extends State<BuildSideBarWait> {
                                                       )
                                                     ],
                                                   ),
-
-                                            //!
                                           ],
                                         ),
                                       )
@@ -1213,8 +1266,7 @@ class _BuildSideBarWaitState extends State<BuildSideBarWait> {
                                             padding: const EdgeInsets.symmetric(
                                                 horizontal: 24, vertical: 4),
                                             decoration: BoxDecoration(
-                                              color: ThemeColors()
-                                                  .background, // สีพื้นหลังของ Dropdown
+                                              color: ThemeColors().background,
                                               borderRadius:
                                                   BorderRadius.circular(8),
                                             ),
@@ -1225,10 +1277,9 @@ class _BuildSideBarWaitState extends State<BuildSideBarWait> {
                                                         ? null
                                                         : _selectedTextValue,
                                                 hint: Text(
-                                                  "เหตุผล", // ข้อความเริ่มต้น
+                                                  "เหตุผล",
                                                   style: TextStyle(
-                                                    color: ThemeColors()
-                                                        .gray70, // สีข้อความเริ่มต้น
+                                                    color: ThemeColors().gray70,
                                                     fontSize: 16,
                                                   ),
                                                 ),
@@ -1237,11 +1288,11 @@ class _BuildSideBarWaitState extends State<BuildSideBarWait> {
                                                   height: 24,
                                                   width: 24,
                                                 ),
-                                                dropdownColor: ThemeColors()
-                                                    .background, // สีพื้นหลังของเมนู
+                                                dropdownColor:
+                                                    ThemeColors().background,
                                                 style: TextStyle(
-                                                  color: ThemeColors()
-                                                      .lightBlue60, // สีข้อความเมื่อเลือกแล้ว
+                                                  color:
+                                                      ThemeColors().lightBlue60,
                                                   fontSize: 16,
                                                 ),
                                                 items: _itemstext
@@ -1253,7 +1304,7 @@ class _BuildSideBarWaitState extends State<BuildSideBarWait> {
                                                       value,
                                                       style: TextStyle(
                                                         color: ThemeColors()
-                                                            .lightBlue60, // สีของข้อความในรายการ
+                                                            .lightBlue60,
                                                         fontSize: 16,
                                                       ),
                                                     ),
@@ -1268,7 +1319,7 @@ class _BuildSideBarWaitState extends State<BuildSideBarWait> {
                                               ),
                                             ),
                                           ),
-                                          SizedBox(
+                                          const SizedBox(
                                             height: 24,
                                           ),
                                           Row(
@@ -1300,8 +1351,7 @@ class _BuildSideBarWaitState extends State<BuildSideBarWait> {
                                               horizontal: 24,
                                             ),
                                             decoration: BoxDecoration(
-                                              color: ThemeColors()
-                                                  .background, // สีพื้นหลังของ TextField
+                                              color: ThemeColors().background,
                                               borderRadius:
                                                   BorderRadius.circular(8),
                                             ),
@@ -1314,26 +1364,22 @@ class _BuildSideBarWaitState extends State<BuildSideBarWait> {
                                                       contentPadding:
                                                           const EdgeInsets
                                                               .symmetric(
-                                                              horizontal:
-                                                                  0), // ปรับให้ข้อความใน TextField อยู่ในตำแหน่งที่เหมาะสม
-                                                      border: InputBorder
-                                                          .none, // ซ่อนเส้นขอบ
-                                                      hintText:
-                                                          "หมายเหตุ", // ข้อความเริ่มต้น
+                                                              horizontal: 0),
+                                                      border: InputBorder.none,
+                                                      hintText: "หมายเหตุ",
                                                       hintStyle: TextStyle(
                                                         color: ThemeColors()
-                                                            .gray70, // ✅ สีที่อ่านง่ายขึ้น
+                                                            .gray70,
                                                         fontSize: 14,
                                                       ),
                                                     ),
                                                     style: TextStyle(
                                                       fontSize: 14,
                                                       color: ThemeColors()
-                                                          .lightBlue60, // ✅ สีข้อความที่พิมพ์
+                                                          .lightBlue60,
                                                     ),
                                                     onChanged: (value) {
-                                                      print(
-                                                          "Input: $value"); // ✅ ดักจับข้อความใหม่
+                                                      print("Input: $value");
                                                     },
                                                   ),
                                                 ),
@@ -1346,11 +1392,11 @@ class _BuildSideBarWaitState extends State<BuildSideBarWait> {
                             ),
                           ),
                         ),
-                        _selectedValue
-                            ? SizedBox(
+                        _selectedValueCK
+                            ? const SizedBox(
                                 height: 24,
                               )
-                            : SizedBox(
+                            : const SizedBox(
                                 height: 440,
                               ),
                         _buildConnectButton(),
@@ -1368,9 +1414,7 @@ class _BuildSideBarWaitState extends State<BuildSideBarWait> {
 
   Widget _buildConnectButton() {
     return GestureDetector(
-      onTap: () {
-        setState(() {});
-      },
+      onTap: (){},
       child: Container(
         width: 439,
         height: 48,
@@ -1400,7 +1444,7 @@ class _BuildSideBarWaitState extends State<BuildSideBarWait> {
             height: 1,
             color: ThemeColors().green50,
           ),
-          SizedBox(height: 24),
+          const SizedBox(height: 24),
           Row(
             children: [
               Text(
@@ -1413,24 +1457,24 @@ class _BuildSideBarWaitState extends State<BuildSideBarWait> {
               ),
             ],
           ),
-          SizedBox(height: 24),
+          const SizedBox(height: 24),
           buildLocationRow("จุดรับผู้ป่วย ต่อที่ ${index + 1} (ลิงก์กูเกิลแมป)",
               travelList[index]['map']!),
-          SizedBox(height: 24),
+          const SizedBox(height: 24),
           buildLocationRow(
               "จุดรับส่งผู้ป่วย (ลิงก์กูเกิลแมป)", travelList[index]['map']!),
-          SizedBox(height: 24),
+          const SizedBox(height: 24),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               buildDropdown(),
             ],
           ),
-          SizedBox(
+          const SizedBox(
             height: 24,
           ),
           lowdow(),
-          SizedBox(
+          const SizedBox(
             height: 24,
           ),
           Divider(
@@ -1446,7 +1490,7 @@ class _BuildSideBarWaitState extends State<BuildSideBarWait> {
     return Container(
       width: 408,
       height: 48,
-      padding: EdgeInsets.symmetric(horizontal: 24),
+      padding: const EdgeInsets.symmetric(horizontal: 24),
       decoration: BoxDecoration(
         color: ThemeColors().background,
         borderRadius: BorderRadius.circular(8),
@@ -1482,7 +1526,7 @@ class _BuildSideBarWaitState extends State<BuildSideBarWait> {
           children: [
             SvgPicture.asset('assets/icons_detali/location.svg',
                 height: 24, width: 24),
-            SizedBox(width: 4),
+            const SizedBox(width: 4),
             Text(
               text,
               style: TextStyle(
@@ -1493,11 +1537,11 @@ class _BuildSideBarWaitState extends State<BuildSideBarWait> {
             ),
           ],
         ),
-        SizedBox(height: 8),
+        const SizedBox(height: 8),
         Container(
           width: 408,
           height: 48,
-          padding: EdgeInsets.symmetric(horizontal: 24),
+          padding: const EdgeInsets.symmetric(horizontal: 24),
           decoration: BoxDecoration(
             color: ThemeColors().background,
             borderRadius: BorderRadius.circular(8),
@@ -1533,17 +1577,16 @@ class _BuildSideBarWaitState extends State<BuildSideBarWait> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          // Dropdown แรก
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Row(
                 children: [
                   SvgPicture.asset(
-                    'assets/icons_detali/category.svg', // ไอคอนของประเภทการรับส่ง
+                    'assets/icons_detali/category.svg',
                     height: 24,
                     width: 24,
-                    color: ThemeColors().orange50, // สีของไอคอน
+                    color: ThemeColors().orange50,
                   ),
                   const SizedBox(width: 4),
                   Text(
@@ -1563,7 +1606,7 @@ class _BuildSideBarWaitState extends State<BuildSideBarWait> {
                 padding:
                     const EdgeInsets.symmetric(horizontal: 24, vertical: 4),
                 decoration: BoxDecoration(
-                  color: ThemeColors().background, // สีพื้นหลังของ Dropdown
+                  color: ThemeColors().background,
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: DropdownButtonHideUnderline(
@@ -1571,27 +1614,25 @@ class _BuildSideBarWaitState extends State<BuildSideBarWait> {
                     value:
                         _selectedTextValue.isEmpty ? null : _selectedTextValue,
                     hint: Text(
-                      "ประเภทรถรับส่ง", // ข้อความเริ่มต้น
+                      "ประเภทรถรับส่ง",
                       style: TextStyle(
-                        color: ThemeColors().gray70, // สีข้อความเริ่มต้น
+                        color: ThemeColors().gray70,
                         fontSize: 16,
                       ),
                     ),
                     icon: Padding(
-                      padding: const EdgeInsets.only(
-                          right: 8), // ปรับตำแหน่งของไอคอน
+                      padding: const EdgeInsets.only(right: 8),
                       child: SvgPicture.asset(
-                        'assets/icons_detali/drop.svg', // ไอคอน dropdown
-                        height: 20, // ขนาดที่เล็กลง
+                        'assets/icons_detali/drop.svg',
+                        height: 20,
                         width: 20,
                       ),
                     ),
-                    isDense: true, // ลดความสูงของ Dropdown ให้พอดีกับกล่อง
-                    isExpanded: true, // ให้ Dropdown ขยายเต็มกล่อง
+                    isDense: true,
+                    isExpanded: true,
                     dropdownColor: ThemeColors().background,
                     style: TextStyle(
-                      color:
-                          ThemeColors().lightBlue60, // สีข้อความเมื่อเลือกแล้ว
+                      color: ThemeColors().lightBlue60,
                       fontSize: 16,
                     ),
                     items: _items.map((String value) {
@@ -1616,17 +1657,16 @@ class _BuildSideBarWaitState extends State<BuildSideBarWait> {
               ),
             ],
           ),
-          // Dropdown ที่สอง
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Row(
                 children: [
                   SvgPicture.asset(
-                    'assets/icons_detali/company.svg', // ไอคอนชื่อหน่วยบริการ
+                    'assets/icons_detali/company.svg',
                     height: 24,
                     width: 24,
-                    color: ThemeColors().orange50, // สีของไอคอน
+                    color: ThemeColors().orange50,
                   ),
                   const SizedBox(width: 4),
                   Text(
@@ -1646,7 +1686,7 @@ class _BuildSideBarWaitState extends State<BuildSideBarWait> {
                 padding:
                     const EdgeInsets.symmetric(horizontal: 24, vertical: 4),
                 decoration: BoxDecoration(
-                  color: ThemeColors().background, // สีพื้นหลังของ Dropdown
+                  color: ThemeColors().background,
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: DropdownButtonHideUnderline(
@@ -1654,27 +1694,25 @@ class _BuildSideBarWaitState extends State<BuildSideBarWait> {
                     value:
                         _selectedTextValue.isEmpty ? null : _selectedTextValue,
                     hint: Text(
-                      "ชื่อหน่วยบริการ", // ข้อความเริ่มต้น
+                      "ชื่อหน่วยบริการ",
                       style: TextStyle(
-                        color: ThemeColors().gray70, // สีข้อความเริ่มต้น
+                        color: ThemeColors().gray70,
                         fontSize: 16,
                       ),
                     ),
                     icon: Padding(
-                      padding: const EdgeInsets.only(
-                          right: 8), // ปรับตำแหน่งของไอคอน
+                      padding: const EdgeInsets.only(right: 8),
                       child: SvgPicture.asset(
-                        'assets/icons_detali/drop.svg', // ไอคอน dropdown
-                        height: 20, // ขนาดที่เล็กลง
+                        'assets/icons_detali/drop.svg',
+                        height: 20,
                         width: 20,
                       ),
                     ),
-                    isDense: true, // ลดความสูงของ Dropdown ให้พอดีกับกล่อง
-                    isExpanded: true, // ให้ Dropdown ขยายเต็มกล่อง
+                    isDense: true,
+                    isExpanded: true,
                     dropdownColor: ThemeColors().background,
                     style: TextStyle(
-                      color:
-                          ThemeColors().lightBlue60, // สีข้อความเมื่อเลือกแล้ว
+                      color: ThemeColors().lightBlue60,
                       fontSize: 16,
                     ),
                     items: _items.map((String value) {
@@ -1761,7 +1799,7 @@ class _BuildSideBarWaitState extends State<BuildSideBarWait> {
                         ),
                       ),
                       SvgPicture.asset(
-                        'assets/icons_detali/calendar.svg', // ไอคอน Dropdown
+                        'assets/icons_detali/calendar.svg',
                         height: 24,
                         width: 24,
                         color: ThemeColors().lightBlue70,
@@ -1828,7 +1866,6 @@ class _BuildSideBarWaitState extends State<BuildSideBarWait> {
             ),
           ],
         ),
-        //!
         const SizedBox(
           height: 24,
         ),
@@ -1886,7 +1923,7 @@ class _BuildSideBarWaitState extends State<BuildSideBarWait> {
                         ),
                       ),
                       SvgPicture.asset(
-                        'assets/icons_detali/time.svg', // ไอคอน Dropdown
+                        'assets/icons_detali/time.svg',
                         height: 24,
                         width: 24,
                         color: ThemeColors().lightBlue70,
@@ -1947,7 +1984,7 @@ class _BuildSideBarWaitState extends State<BuildSideBarWait> {
                         ),
                       ),
                       SvgPicture.asset(
-                        'assets/icons_detali/time.svg', // ไอคอน Dropdown
+                        'assets/icons_detali/time.svg',
                         height: 24,
                         width: 24,
                         color: ThemeColors().lightBlue70,

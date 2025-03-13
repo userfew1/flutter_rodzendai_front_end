@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+  final colorsApp = ThemeColors();
 
 class ThemeColors {
   final Color background = const Color(0xFFF4F8FF);
